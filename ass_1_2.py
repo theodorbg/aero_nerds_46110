@@ -32,7 +32,7 @@ for airfoil in airfoils.values():
     airfoil.cl_slopes_dict["Thin Airfoil"] = slope
     airfoil.cl_offsets_dict["Thin Airfoil"] = intercept
 
-    print(fah)
+    
     # Use panel method to estimate Cl
     # first get the x and y coordinates:
     x_contour, y_contour = airfoil.get_coordinates()
