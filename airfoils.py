@@ -59,6 +59,8 @@ class NACA4Airfoil:
         # Also store camber line coordinates
         self.yc = yc * self.c
 
+        
+
         # store slope of camber line
         self.camber_slope = dyc_dx
 
@@ -68,6 +70,26 @@ class NACA4Airfoil:
         self.cl_xfoil_free = None
         self.cl_xfoil_fixed = None
 
+        self.cl_dict = {
+                    "Thin Airfoil": None,
+                    "Panel Method": None,
+                    "XFOIL Free":   None,
+                    "XFOIL Fixed":  None,
+                }
+
+        self.cl_slopes_dict = {
+                    "Thin Airfoil": None,
+                    "Panel Method": None,
+                    "XFOIL Free":   None,
+                    "XFOIL Fixed":  None,
+                }
+        self.cl_offsets_dict = {
+                    "Thin Airfoil": None,
+                    "Panel Method": None,
+                    "XFOIL Free":   None,
+                    "XFOIL Fixed":  None,
+                }
+        
     def _camber_line(self, x: np.ndarray, m: float, p: float):
         """
         Camber line and slope for NACA 4-digit.[file:1]
