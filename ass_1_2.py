@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from thin_airfoil_theory import ThinAirfoilTheory
 from plot import *
 from panel_method.exercise.solver import solve_closed_contour_panel_method
-
+from xfoils_class import xfoils_free, xfoils_fixed
 
 
 # task 1
@@ -55,6 +55,21 @@ for airfoil in airfoils.values():
     # add slope to dictionary
     airfoil.cl_slopes_dict["Panel Method"] = slope_panel
     airfoil.cl_offsets_dict["Panel Method"] = intercept_panel
+
+# add free transition xfoil data to dictionary
+for code, xfoil in xfoils_free.items():
+    if code in airfoils:
+        airfoil = airfoils[code]
+        airfoil.cl_dict["XFOIL Free"] = xfoil.CL
+        # slope_xfoil_free, intercept_xfoil_free = np.polyfit(np.radians(xfoil.alpha), xfoil.CL, 1)
+        # airfoil.cl_slopes_dict["XFOIL Free"] = slope_xfoil_free
+        # airfoil.cl_offsets_dict["XFOIL Free"] = intercept_xfoil_free
+
+# add fixed transition xfoil data to dictionary
+for code, xfoil in xfoils_fixed.items():
+    if code in airfoils:
+        airfoil = airfoils[code]
+        airfoil.cl_dict["XFOIL Fixed"] = xfoil.CL
 
 
 METHOD_LABELS = ["Thin Airfoil", "Panel Method", "XFOIL Free", "XFOIL Fixed"]
