@@ -4,9 +4,11 @@ from airfoils import NACA4Airfoil
 import matplotlib.pyplot as plt
 from thin_airfoil_theory import ThinAirfoilTheory
 from plot import *
-from panel_method.exercise.solver import solve_closed_contour_panel_method
+from panel_method.exercise.solver import compute_dCp_panel_method, solve_closed_contour_panel_method, compute_dCp_panel
 from xfoils_class import xfoils_free, xfoils_fixed
+from tables import *
 
+METHOD_LABELS = ["Thin Airfoil", "Panel Method", "XFOIL Free", "XFOIL Fixed"]
 
 # task 1
 # create dictionary to store the airfoils
@@ -15,7 +17,7 @@ airfoils = {"2312": None, "2324": None, "4412": None, "4424": None}
 airfoils = {code: NACA4Airfoil(code) for code in airfoils}
 
 
-#%% task 2 a
+# task 2 a
 # Evaluate and compare the lift coefficient using Thin airfoil theory 
 aoa = np.arange(-10, 16, 1)  # AoA from -10 to 15 degrees
 for airfoil in airfoils.values():
@@ -35,7 +37,7 @@ for airfoil in airfoils.values():
     
     # Use panel method to estimate Cl
     # first get the x and y coordinates:
-    x_contour, y_contour = airfoil.get_coordinates()
+    x_contour, y_contour = airfoil.get_closed_contour()
     # loop over each aoa since solver expects a single float
     cl_panel = []
     for alpha in aoa:
@@ -56,6 +58,15 @@ for airfoil in airfoils.values():
     airfoil.cl_slopes_dict["Panel Method"] = slope_panel
     airfoil.cl_offsets_dict["Panel Method"] = intercept_panel
 
+    # calculate dCp for thin airfoil theory for AoA = 10 degrees
+    x_c, dCp = thin_af.compute_dCp(aoa_deg=10)
+    airfoil.dCp_thin_airfoil = dCp
+    airfoil.dCp_xc_tat = x_c
+
+    x_c, dCp = compute_dCp_panel(airfoil=airfoil, aoa_deg=10.0, U_inf=1.0, n_interp=200)
+    airfoil.dCp_panel_method = dCp
+    airfoil.dCp_xc_pm = x_c
+
 # add free transition xfoil data to dictionary
 for code, xfoil in xfoils_free.items():
     if code in airfoils:
@@ -72,9 +83,8 @@ for code, xfoil in xfoils_fixed.items():
         airfoil.cl_dict["XFOIL Fixed"] = xfoil.CL
 
 
-METHOD_LABELS = ["Thin Airfoil", "Panel Method", "XFOIL Free", "XFOIL Fixed"]
 
-# Plot each airfoil with all methods
+# Plot Cl for each airfoil with all methods
 plot_flexible(
     x_val=aoa,
     y_vals=[
@@ -88,6 +98,33 @@ plot_flexible(
     x_label="Angle of Attack (degrees)",
     y_units=[f"NACA {code} — Cl [-]" for code in airfoils],
     save_name="cl_vs_aoa_per_airfoil"
+)
+
+
+# Plot dCp for each airfoil with all methods
+# choose one of the x/c distributions to use as the shared x-axis for each method
+x_c_tat = airfoils["2312"].dCp_xc_tat  # using thin airfoil theory x/c as reference
+x_c_pm = airfoils["2312"].dCp_xc_pm  # using panel method x/c as reference
+# x_c_free
+# x_c_fixed
+plot_flexible(
+    x_val=[
+        [af.dCp_xc_tat, af.dCp_xc_pm]
+        for af in airfoils.values()
+    ],
+    y_vals=[
+        [af.dCp_thin_airfoil, af.dCp_panel_method]
+        for af in airfoils.values()
+    ],
+    labels=[
+        ["Thin Airfoil", "Panel Method"]
+        for af in airfoils.values()
+    ],
+    x_label="x/c [-]",
+    y_units=[f"NACA {code} — ΔCp [-]" for code in airfoils],
+    xlims=(0.02, 0.98),
+    ylims=[(0,10) for _ in airfoils],
+    save_name="dCp_vs_xc_per_airfoil"
 )
 
 # Plot each method with all airfoils
@@ -112,138 +149,60 @@ plot_flexible(
 )
 
 # print the slopes of each method for each airfoil
-# ...existing code...
-
-# print slopes as latex table
-available_methods = [m for m in METHOD_LABELS if any(af.cl_slopes_dict.get(m) is not None for af in airfoils.values())]
-
-header = " & ".join(["Airfoil"] + available_methods) + r" \\"
-print(r"\begin{table}[h]")
-print(r"\centering")
-print(r"\begin{tabular}{l" + "c" * len(available_methods) + "}")
-print(r"\hline")
-print(header)
-print(r"\hline")
-for code, af in airfoils.items():
-    row = [f"{code}"]
-    for method in available_methods:
-        slope = af.cl_slopes_dict.get(method)
-        row.append(f"{slope:.2f}" if slope is not None else "-")
-    print(" & ".join(row) + r" \\")
-print(r"\hline")
-print(r"\end{tabular}")
-print(r"\caption{$dC_l/d\alpha$ per radian for each airfoil and method}")
-print(r"\label{tab:cl_slopes}")
-print(r"\end{table}")
+print_latex_table(
+    airfoils, METHOD_LABELS,
+    data_attr="cl_slopes_dict",
+    caption=r"$dC_l/d\alpha$ per radian for each airfoil and method",
+    label="tab:cl_slopes",
+    fmt=".2f"
+)
 
 print("\n\n")
-# print offsets as latex table
-available_methods = [m for m in METHOD_LABELS if any(af.cl_offsets_dict.get(m) is not None for af in airfoils.values())]
 
-header = " & ".join(["Airfoil"] + available_methods) + r" \\"
-print(r"\begin{table}[h]")
-print(r"\centering")
-print(r"\begin{tabular}{l" + "c" * len(available_methods) + "}")
-print(r"\hline")
-print(header)
-print(r"\hline")
-for code, af in airfoils.items():
-    row = [f"{code}"]
-    for method in available_methods:
-        offset = af.cl_offsets_dict.get(method)
-        row.append(f"{offset:.3f}" if offset is not None else "-")
-    print(" & ".join(row) + r" \\")
-print(r"\hline")
-print(r"\end{tabular}")
-print(r"\caption{Cl offsets for each airfoil and method}")
-print(r"\label{tab:cl_offsets}")
-print(r"\end{table}")
+print_latex_table(
+    airfoils, METHOD_LABELS,
+    data_attr="cl_offsets_dict",
+    caption="Cl offsets for each airfoil and method",
+    label="tab:cl_offsets",
+    fmt=".3f"
+)
 
 
-# ...existing code...
-# for code, af in airfoils.items():
-#     print(f"NACA {code} Cl slopes:")
-#     for method in METHOD_LABELS:
-#         slope = af.cl_slopes_dict.get(method)
-#         if slope is not None:
-#             print(f"  {method}: {slope:.5f} per radian")
-# calculate the slope of the linear cl curves
-# for airfoil in airfoils.values():
-#     cl_thin = airfoil.cl_dict["Thin Airfoil"]
-#     slope, intercept = np.polyfit(aoa, cl_thin, 1)
-#     print(f"NACA {airfoil.code} Thin Airfoil Cl slope: {slope:.2f} per radian")
-#     airfoil.cl_slopes_dict["Thin Airfoil"] = slope
+# help me use the panel method to estimate
+# the pressure distribution (dCp) over the airfoil surface at a given angle of attack (e.g., 10 degrees). 
+# Then, plot the dCp distribution as a function of x/c for an airfoil
+"""
+help me calculate the pressure difference distribution deltaCp as a function of x/c for an airfoil.
+dCP=(p_upper-plower)/(0.5*rho*U0^2), for AoA=10 degrees.
+I need to use equation:
+dCP=2*gamma/U0
+and
+gamma(theta)= 2*U0*(A0*(1+cos(theta))/sin(theta)+sum(An*sin(n*theta),n=1..infty))
 
-#     # also calculate slope for panel method
-#     cl_panel = airfoil.cl_dict["Panel Method"]
-#     slope_panel, intercept_panel = np.polyfit(aoa, cl_panel, 1)
-#     print(f"NACA {airfoil.code} Panel Method Cl slope: {slope_panel:.2f} per radian")
-#     airfoil.cl_slopes_dict["Panel Method"] = slope_panel
+where the coefficients are given by:
+A0=alpha-1/pi*int(camber_slope*dtheta,theta=0..pi)
+and
+An=2/pi*int(camber_slope*cos(n*theta)detheta,theta=0..pi), n=1,2,3...
 
+I need to use thin airfoil theory, panel method and xfoil.
+My best guess is that this is thin airfoil theory since the equations look very similar to when i computed the lift coefficient, but i dont know if i can use it for panel method also ? And what about xfoil, do i get the dCp directly with XFOIL or should i compute something as well here?
 
-# Old plot only Cl
-# plot_flexible(x_val=aoa,
-#               y_vals=[af.cl_thin_airfoil for af in airfoils.values()],
-#               labels=[f"NACA {code} Thin Airfoil" for code in airfoils],
-#               x_label="Angle of Attack (degrees)",
-#               y_units=["Cl [-]", "Cl [-]", "Cl [-]", "Cl [-]"],
-#               save_name="cl_vs_aoa_thin_airfoil")
+Also, what do i use for U0 / Qinfinity ? Its not given in the assignment. The assignment is for an aerodynamics engineering course
+"""
+af_test = airfoils["2312"]
 
+x_c, dCp_perplex = compute_dCp_panel(airfoil=af_test, aoa_deg=10.0, U_inf=1.0, n_interp=200)
+xc_common, dCp_chat = compute_dCp_panel_method(af_test, aoa_deg=10.0, U_inf=1.0)
 
-# control plot to see if they were different
-# plot_flexible(x_val=aoa,
-#               y_vals=[[af.cl_thin_airfoil for af in airfoils.values()]],
-#               labels=[[f"NACA {code} Thin Airfoil" for code in airfoils]],
-#               x_label="Angle of Attack (degrees)",
-#               y_units=["Cl [-]"],
-#               save_name="cl_vs_aoa_thin_airfoil_single_subplot")
-# plot Cl vs AoA -10..15 deg
-
-#%% task 2 b
-# Evaluate and compare the lift coefficient using panel method
-
-# Use panel method to estimate Cl
-
-# plot_flexible(x_val=aoa,
-#               y_vals=[af.cl_panel_method for af in airfoils.values()],
-#               labels=[f"NACA {code} Panel Method" for code in airfoils],
-#               x_label="Angle of Attack (degrees)",
-#               y_units=["Cl [-]", "Cl [-]", "Cl [-]", "Cl [-]"],
-#               save_name="cl_vs_aoa_panel_method")
-
-
-
-# create airfoil first
-# af = NACA4Airfoil("2312")
-# # first get the x and y coordinates:
-# x_contour, y_contour = af.get_coordinates()
-# # loop over each aoa since solver expects a single float
-# cl_panel = []
-# for alpha in aoa:
-#     panel_dict = solve_closed_contour_panel_method(
-#         x=x_contour,
-#         y=y_contour,
-#         aoa_deg=float(alpha),
-#         U_inf=1.0,
-#         kutta_condition=True
-#     )
-#     cl_panel.append(panel_dict["Cl"])
-
-# af.cl_panel_method = np.array(cl_panel)
-
-# plot_flexible(x_val=aoa,
-#               y_vals=[[af.cl_panel_method]],
-#               labels=[[f"NACA 2312 Panel Method"]],
-#               x_label="Angle of Attack (degrees)",
-#               y_units=["Cl [-]"],
-#               save_name="cl_vs_aoa_panel_method_single_subplot")
-
-
-#%% task 2 c I
-# Evaluate and compare the lift coefficient using X foil: free transition BL
-
-
-#%% task 2 c II
-# Evaluate and compare the lift coefficient using X foil: fixed transition BL
+plot_flexible(
+    x_val=[[xc_common,x_c]],
+    y_vals=[dCp_chat, dCp_perplex],
+    labels=[f"NACA {af_test.code} Panel Method", f"NACA {af_test.code} Panel Method"],
+    x_label="x/c [-]",
+    y_units=["ΔCp [-]"],
+    save_name="dCp_vs_xc_single_airfoil",
+    xlims=(0, 0.1),
+    ylims=[(-0.1, 1)]
+)
 
 

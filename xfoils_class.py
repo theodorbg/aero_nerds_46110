@@ -97,9 +97,6 @@ xfoils_free = {
     "4424": xfoil4424_free
 }
 
-# print the shape of the data arrays for all xfoils to verify they were loaded correctly
-for code, xfoil in xfoils_free.items():
-    print(f"{code} Free: alpha={xfoil.alpha.shape}, CL={xfoil.CL.shape}, CD={xfoil.CD.shape}, CDp={xfoil.CDp.shape}, CM={xfoil.CM.shape}, Top_Xtr={xfoil.Top_Xtr.shape}, Bot_Xtr={xfoil.Bot_Xtr.shape}")
 
 xfoils_fixed = {
     "2312": xfoil2312_fixed,
@@ -109,5 +106,5 @@ xfoils_fixed = {
 }
 
 # print the shape of the data arrays for all xfoils to verify they were loaded correctly
-for code, xfoil in xfoils_fixed.items():
-    print(f"{code} Fixed: alpha={xfoil.alpha.shape}, CL={xfoil.CL.shape}, CD={xfoil.CD.shape}, CDp={xfoil.CDp.shape}, CM={xfoil.CM.shape}, Top_Xtr={xfoil.Top_Xtr.shape}, Bot_Xtr={xfoil.Bot_Xtr.shape}")
+# for code, xfoil in xfoils_fixed.items():
+#     print(f"{code} Fixed: alpha={xfoil.alpha.shape}, CL={xfoil.CL.shape}, CD={xfoil.CD.shape}, CDp={xfoil.CDp.shape}, CM={xfoil.CM.shape}, Top_Xtr={xfoil.Top_Xtr.shape}, Bot_Xtr={xfoil.Bot_Xtr.shape}")
