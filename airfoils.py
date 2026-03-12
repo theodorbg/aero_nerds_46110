@@ -1,4 +1,5 @@
 import numpy as np
+from plot import *
 
 class NACA4Airfoil:
     def __init__(self, code: str, n_points: int = 200, chord: float = 1.0):
@@ -69,6 +70,18 @@ class NACA4Airfoil:
         self.cl_panel_method = None
         self.cl_xfoil_free = None
         self.cl_xfoil_fixed = None
+
+        # store dCp for various methods (to be computed later)
+        self.dCp_thin_airfoil = None
+        self.dCp_panel_method = None
+        self.dCp_xfoil_free = None
+        self.dCp_xfoil_fixed = None
+
+        # store the x/c locations corresponding to dCp values (to be computed later)
+        self.dCp_xc_tat = None
+        self.dCp_xc_pm = None
+        self.dCp_xc_xfoil_free = None
+        self.dCp_xc_xfoil_fixed = None
 
         self.cl_dict = {
                     "Thin Airfoil": None,
@@ -149,29 +162,31 @@ class NACA4Airfoil:
             + 0.2843 * x**3
             - 0.1015 * x**4
         )
-
-    def get_coordinates(self):
+    
+    def get_closed_contour(self):
         """
-        Return concatenated surface coordinates suitable for panel method etc.
-        Order: TE lower -> LE -> TE upper.
-
-        Parameters:
-        None
+        Return a closed, clockwise contour for panel method solvers.
+        Order: TE → lower surface (TE→LE) → upper surface (LE→TE) → TE (closed).
+        Clockwise when viewed with x right, y up.
 
         Returns:
-        x_coords: array of x coordinates for the full airfoil contour
-        y_coords: array of y coordinates for the full airfoil contour
+            x_coords: closed contour x coordinates
+            y_coords: closed contour y coordinates
         """
-        # Ensure correct ordering: lower surface from TE (x≈1) to LE (x≈0),
-        # then upper surface from LE (x≈0) to TE (x≈1)
-        xl_rev = self.xl[::-1]
+        x_TE = 0.5 * (self.xu[-1] + self.xl[-1])
+        y_TE = 0.5 * (self.yu[-1] + self.yl[-1])
+
+        # TE → lower surface (TE to LE, reversed) → upper surface (LE to TE) → TE
+        xl_rev = self.xl[::-1]   # lower: TE → LE
         yl_rev = self.yl[::-1]
-        xu_fwd = self.xu
+        xu_fwd = self.xu         # upper: LE → TE
         yu_fwd = self.yu
 
-        self.x_coords = np.concatenate([xl_rev, xu_fwd[1:]])  # skip duplicate LE point
-        self.y_coords = np.concatenate([yl_rev, yu_fwd[1:]])
-        return self.x_coords, self.y_coords
+        x_coords = np.concatenate([[x_TE], xl_rev[:-1], xu_fwd[1:], [x_TE]])
+        y_coords = np.concatenate([[y_TE], yl_rev[:-1], yu_fwd[1:], [y_TE]])
+
+        return x_coords, y_coords
+
 
     def get_camber_line(self):
         """
@@ -187,14 +202,4 @@ class NACA4Airfoil:
         return self.x, self.yc
 
 # # NACA 2312
-# af_2312 = NACA4Airfoil("2312")
-# x2312, y2312 = af_2312.get_coordinates()
-# xc, yc = af_2312.get_camber_line()
-
-# # NACA 2324
-# af_2324 = NACA4Airfoil("2324")
-
-# # NACA 4412 and 4424
-# af_4412 = NACA4Airfoil("4412")
-# af_4424 = NACA4Airfoil("4424")
-
+# af = NACA4Airfoil("2312")

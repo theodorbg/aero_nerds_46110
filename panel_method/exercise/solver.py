@@ -8,6 +8,145 @@ from funaerotool.panel_method.preprocessing import panel_geometry
 from funaerotool.panel_method.transformations import global_to_local
 from funaerotool.panel_method.vortex import parabolic_vortex_distribution
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+def compute_dCp_panel_method(airfoil, aoa_deg=10.0, U_inf=1.0):
+    """
+    Compute pressure difference distribution ΔCp = Cp_lower - Cp_upper
+    as a function of x/c using the panel method.
+
+    Parameters
+    ----------
+    airfoil : NACA4Airfoil
+    aoa_deg : float
+        Angle of attack in degrees
+    U_inf : float
+        Freestream velocity
+
+    Returns
+    -------
+    xc : ndarray
+        chordwise locations (x/c)
+    dCp : ndarray
+        pressure difference distribution
+    """
+
+    # --- 1 get closed contour ---
+    x, y = airfoil.get_closed_contour()
+
+    # --- 2 run panel solver ---
+    sol = solve_closed_contour_panel_method(x, y, aoa_deg=aoa_deg, U_inf=U_inf)
+
+    Cp = sol["Cp"]
+    xp = sol["xp"]
+    yp = sol["yp"]
+
+    # normalize chord location
+    chord = np.max(x) - np.min(x)
+    xc = (xp - np.min(x)) / chord
+
+    # --- 3 split upper and lower surfaces ---
+    upper_mask = yp > 0
+    lower_mask = yp < 0
+
+    xc_upper = xc[upper_mask]
+    Cp_upper = Cp[upper_mask]
+
+    xc_lower = xc[lower_mask]
+    Cp_lower = Cp[lower_mask]
+
+    # sort so interpolation works
+    i_u = np.argsort(xc_upper)
+    i_l = np.argsort(xc_lower)
+
+    xc_upper = xc_upper[i_u]
+    Cp_upper = Cp_upper[i_u]
+
+    xc_lower = xc_lower[i_l]
+    Cp_lower = Cp_lower[i_l]
+
+    # --- 4 common x grid ---
+    xc_common = np.linspace(0, 1, 200)
+
+    Cp_upper_i = np.interp(xc_common, xc_upper, Cp_upper)
+    Cp_lower_i = np.interp(xc_common, xc_lower, Cp_lower)
+
+    # --- 5 pressure difference ---
+    dCp = Cp_lower_i - Cp_upper_i
+
+    return xc_common, dCp
+
+def compute_dCp_panel(
+    airfoil,
+    aoa_deg: float = 10.0,
+    U_inf: float = 1.0,
+    n_interp: int = 200,
+) -> tuple[np.ndarray, np.ndarray, dict]:
+    """Compute ΔCp = Cp_lower - Cp_upper as a function of x/c using the panel method.
+
+    Args:
+        airfoil:   NACA4Airfoil instance (provides get_closed_contour).
+        aoa_deg:   Angle of attack in degrees.
+        U_inf:     Freestream speed (cancels in Cp; kept for API consistency).
+        n_interp:  Number of x/c points in [0, 1] for output.
+
+    Returns:
+        x_c:    x/c array from 0 to 1.
+        dCp:    ΔCp = Cp_lower − Cp_upper at each x/c (positive = net lifting force).
+        result: Raw dict returned by solve_closed_contour_panel_method.
+    """
+    x, y = airfoil.get_closed_contour()
+
+    result = solve_closed_contour_panel_method(
+        x, y, aoa_deg=aoa_deg, U_inf=U_inf, kutta_condition=True
+    )
+
+    xp = result["xp"]          # panel midpoint x  (N panels)
+    yp = result["yp"]          # panel midpoint y
+    Cp = result["Cp"]          # Cp at each panel midpoint
+    n_panels = len(xp)
+
+    # ── Index-based surface split ─────────────────────────────────────────────
+    # Contour order: TE → lower (TE→LE) → upper (LE→TE) → TE
+    # n_panels = 2*(n_points - 1), so each surface occupies exactly half
+    half = n_panels // 2
+
+    # Lower surface panels: indices 0 … half-1  (TE → LE direction)
+    xp_lower = xp[:half]
+    Cp_lower = Cp[:half]
+
+    # Upper surface panels: indices half … n_panels-1  (LE → TE direction)
+    xp_upper = xp[half:]
+    Cp_upper = Cp[half:]
+
+    # ── Sort each surface LE → TE (x ascending) ──────────────────────────────
+    idx_l = np.argsort(xp_lower)
+    idx_u = np.argsort(xp_upper)
+    xp_lower, Cp_lower = xp_lower[idx_l], Cp_lower[idx_l]
+    xp_upper, Cp_upper = xp_upper[idx_u], Cp_upper[idx_u]
+
+    # ── Normalise by chord ────────────────────────────────────────────────────
+    chord = airfoil.c
+    xp_lower /= chord
+    xp_upper /= chord
+
+    # ── Interpolate onto uniform x/c grid ────────────────────────────────────
+    x_c = np.linspace(0.0, 1.0, n_interp)          # force full 0→1 range
+    Cp_lower_i = np.interp(x_c, xp_lower, Cp_lower)
+    Cp_upper_i = np.interp(x_c, xp_upper, Cp_upper)
+
+    # ΔCp sign convention matches your assignment: (p_upper - p_lower) / q_inf
+    # which equals Cp_upper - Cp_lower, negative for a lifting airfoil.
+    # Flip sign if your assignment uses (p_lower - p_upper):
+    dCp = Cp_lower_i - Cp_upper_i   # positive → net upward force
+
+    # Store on the airfoil object for later comparison / plotting
+    airfoil.dCp_panel_method = dCp
+    airfoil.dCp_xc_pm = x_c
+    airfoil.cl_panel_method = result["Cl"]
+
+    return x_c, dCp
 
 def solve_closed_contour_panel_method(
     x: np.ndarray,
