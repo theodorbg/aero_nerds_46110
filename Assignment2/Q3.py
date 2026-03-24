@@ -9,17 +9,6 @@ AR = 6
 TR = [0.2, 0.4, 0.6, 0.8, 1.0]
 alpha_L0_deg = 0
 
-
-def chord_ratio_tapered(x_tilde, TR):
-    """
-    Returns c(x_tilde) / c_bar for a linearly tapered wing.
-
-    x_tilde = x / (b/2) in [-1, 1]
-    TR = c_tip / c_root
-    """
-    return 2.0 * (1.0 - (1.0 - TR) * np.abs(x_tilde)) / (1.0 + TR)
-
-
 # ============================================================
 # Question 3
 # Tapered wing, AR = 6, AoA = 5 deg, TR = 0.2 ... 1.0

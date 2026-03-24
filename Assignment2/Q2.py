@@ -9,7 +9,7 @@ alpha_L0_deg = 0
 
 
 fig, axes = plt.subplots(1, 3, figsize=(15, 4), dpi=200, constrained_layout=True, sharex=True, sharey=True)
-plt.subplots_adjust(top=0.82, wspace=0.18)  # make room for legend
+plt.subplots_adjust(top=0.82, wspace=0.18)
 
 for i, a_plot in enumerate(alpha_plot_deg):
     ax = axes[i]
@@ -27,8 +27,8 @@ for i, a_plot in enumerate(alpha_plot_deg):
         label = r"AR=$\infty$" if np.isinf(ar) else f"AR={ar}"
         ax.plot(sol["x_tilde"], sol["alpha_i_deg"], label=label)
 
-    ax.set_xlabel(r"Span coordinate, $2y/b$ [-]")
-    ax.set_ylabel(r"Induced angle of attack, $\alpha_i$ [deg]")
+    ax.set_xlabel(r"$\tilde{x}$ [-]")
+    ax.set_ylabel(r"$\alpha_i$ [deg]")
     ax.set_title(rf"$\alpha = {a_plot}^\circ$")
     ax.grid(True, alpha=0.3)
 
@@ -76,17 +76,15 @@ fig, axes = plt.subplots(1, 2, figsize=(11, 4), dpi=200, constrained_layout=True
 # CL
 for col in df_CL_rect.columns:
     axes[0].plot(df_CL_rect.index, df_CL_rect[col], marker="o", label=f"AR={col}")
-axes[0].set_xlabel(r"Angle of attack, $\alpha$ [deg]")
+axes[0].set_xlabel(r"$\alpha$ [deg]")
 axes[0].set_ylabel(r"$C_L$ [-]")
-axes[0].set_title(r"Rectangular wing: $C_L$ vs $\alpha$")
 axes[0].grid(True, alpha=0.3)
 
 # CDi
 for col in df_CDi_rect.columns:
     axes[1].plot(df_CDi_rect.index, df_CDi_rect[col], marker="o", label=f"AR={col}")
-axes[1].set_xlabel(r"Angle of attack, $\alpha$ [deg]")
+axes[1].set_xlabel(r"$\alpha$ [deg]")
 axes[1].set_ylabel(r"$C_{D,i}$ [-]")
-axes[1].set_title(r"Rectangular wing: $C_{D,i}$ vs $\alpha$")
 axes[1].grid(True, alpha=0.3)
 
 handles, labels = axes[0].get_legend_handles_labels()
