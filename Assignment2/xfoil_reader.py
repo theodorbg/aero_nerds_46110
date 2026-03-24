@@ -84,8 +84,8 @@ class XFoil:
 from pathlib import Path
 
 def load_xfoil(code):
-    base = Path(r"c:\Users\tgilh\git_master_laptop\aero_nerds_46110\assignment2")
+    base = Path(__file__).parent  # folder where this script is located
 
-    xfoil = XFoil(str(base / f"NACA{code}_free.txt")),
+    xfoil = XFoil(str(base / f"NACA{code}_free.txt"))
         
     return xfoil
