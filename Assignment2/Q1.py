@@ -1,4 +1,11 @@
 import numpy as np
+<<<<<<< HEAD
+=======
+import matplotlib.pyplot as plt
+from panel_method.funaerotool.utils import generate_naca4_contour
+import pandas as pd
+from xfoil_reader import XFoil, load_xfoil
+>>>>>>> d6c727f69a5d67586a86b94edcd7c330b62c40a2
 import pandas as pd
 import matplotlib.pyplot as plt
 

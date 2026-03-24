@@ -3,7 +3,7 @@ from pathlib import Path
 from xfoil_reader import load_xfoil
 
 import os
-XFOIL_EXE = Path(os.environ.get("XFOIL_PATH", r"C:\Users\tgilh\OneDrive\Desktop\XFOIL6.99\xfoil.exe"))
+XFOIL_EXE = Path(os.environ.get("XFOIL_PATH", r"C:\Users\sebas\Downloads\XFOIL6.99\xfoil.exe"))
 
 BASE_DIR = Path(__file__).parent
 # XFOIL_EXE = BASE_DIR / "XFOIL" / "xfoil.exe"
@@ -16,8 +16,12 @@ vpar_cmd = "N 12"  # Natural transition at 12% chord
     
 
 
-output_filename = f"NACA{airfoil}_{transition_mode}.txt"  # just the filename
+output_filename = f"NACA{airfoil}_{transition_mode}.txt"
+output_path = BASE_DIR / output_filename
 
+# Remove existing file so XFOIL doesn't append
+if output_path.exists():
+    output_path.unlink()
 
 commands = "\n".join([
     f"NACA {airfoil}",
@@ -27,13 +31,13 @@ commands = "\n".join([
     "ITER 100",
     "VPAR",
     vpar_cmd,
-    "",             # exit VPAR
+    "",
     "PACC",
-    output_filename,   # relative, not str(output_file)
-    "",             # no drag polar file
+    output_filename,
+    "",
     "ASEQ -4 8 1",
-    "PACC",         # toggle PACC off
-    "",             # exit OPER
+    "PACC",
+    "",
     "QUIT",
     ""
 ])
