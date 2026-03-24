@@ -39,6 +39,8 @@ plt.show()
 
 
 # Q2b: CL and CDi vs alpha for rectangular wing
+alpha_plot_deg = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+
 CL_rect_data = {}
 CDi_rect_data = {}
 
