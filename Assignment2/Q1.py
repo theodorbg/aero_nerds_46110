@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
 # Define Aspect Ratios and angles of attack
 AR = [4, 6, 8, 10, np.inf]
 alpha_deg = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
