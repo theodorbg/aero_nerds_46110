@@ -1,8 +1,13 @@
 import numpy as np
+<<<<<<< HEAD:Assignment2/Q1_theo.py
 import matplotlib.pyplot as plt
 from panel_method.funaerotool.utils import generate_naca4_contour
 import pandas as pd
 from xfoil_reader import XFoil, load_xfoil
+=======
+import pandas as pd
+import matplotlib.pyplot as plt
+>>>>>>> b8d0042f3b6e1fd64569cc17d79b5fc1b5ed263f:Assignment2/Q1.py
 
 # Define Aspect Ratios and angles of attack
 AR = [4, 6, 8, 10, np.inf]
