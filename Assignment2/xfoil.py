@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from xfoil_reader import load_xfoil
 
 import os
 XFOIL_EXE = Path(os.environ.get("XFOIL_PATH", r"C:\Users\tgilh\OneDrive\Desktop\XFOIL6.99\xfoil.exe"))
