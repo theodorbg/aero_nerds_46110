@@ -1,12 +1,23 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from panel_method.funaerotool.utils import generate_naca4_contour
+import pandas as pd
+from xfoil_reader import XFoil, load_xfoil
+
 # Define Aspect Ratios and angles of attack
 AR = [4, 6, 8, 10, np.inf]
-alpha_deg = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+airfoil = load_xfoil("2410")
+alpha = airfoil.alpha
+print(alpha)
+
 alpha_L0_deg = 0 # Zero lift angle of attack
 
 
 # REPLACE WITH ACTUAL DATA
-cl_airfoil = np.array([-0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.6])
-cd_airfoil = np.array([0.018, 0.012, 0.009, 0.010, 0.014, 0.024, 0.040])
+print(airfoil.CL)
+# cl_airfoil = np.array([-0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.6])
+print(airfoil.CD)
+# cd_airfoil = np.array([0.018, 0.012, 0.009, 0.010, 0.014, 0.024, 0.040])
 
 
 # Create empty dictionaries to collect results
@@ -19,7 +30,7 @@ for ar in AR:
     CDi_list = []
     CD_list = []
 
-    for a_deg in alpha_deg:
+    for a_deg in airfoil.alpha:
         # Convert to radians
         a = np.deg2rad(a_deg)
         alpha_L0 = np.deg2rad(alpha_L0_deg)
@@ -44,7 +55,7 @@ for ar in AR:
             alpha_eff = a
 
         # Profile drag from airfoil polar: Cd = cd(Cl)
-        C_D = np.interp(C_L, cl_airfoil, cd_airfoil)
+        C_D = np.interp(C_L, airfoil.CL, airfoil.CD)
 
         # Store values
         CL_list.append(C_L)
@@ -57,9 +68,9 @@ for ar in AR:
     CD_data[col_name] = CD_list
 
 # Build dataframes
-df_CL = pd.DataFrame(CL_data, index=alpha_deg)
-df_CDi = pd.DataFrame(CDi_data, index=alpha_deg)
-df_CD = pd.DataFrame(CD_data, index=alpha_deg)
+df_CL = pd.DataFrame(CL_data, index=airfoil.alpha)
+df_CDi = pd.DataFrame(CDi_data, index=airfoil.alpha)
+df_CD = pd.DataFrame(CD_data, index=airfoil.alpha)
 
 # Name the index
 df_CL.index.name = "alpha_deg"

@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from panel_method.funaerotool.utils import generate_naca4_contour
+from xfoil_reader import XFoil, load_xfoil_data
+
 
 Re = 5e6 # Reynolds number
 code = "2410" # naca airfoil code
