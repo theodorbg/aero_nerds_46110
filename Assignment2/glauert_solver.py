@@ -71,7 +71,15 @@ def solve_wing_glauert(
 
     def chord_ratio(x_tilde):
         """
-        Returns c(x_tilde) / c_bar
+        Returns the local chord normalised by the mean chord: c(y) / c_bar.
+
+        x_tilde = 2y/b is the dimensionless spanwise coordinate in [-1, 1].
+
+        Rectangular:  c(y) = c_bar  everywhere  =>  ratio = 1
+        Tapered:      c(y) varies linearly from c_root at the root (x_tilde=0)
+                      to c_tip at the tips (|x_tilde|=1).
+                      Using c_bar = (c_root + c_tip)/2 and lambda = c_tip/c_root:
+                          c(y)/c_bar = 2*(1 - (1-lambda)*|x_tilde|) / (1+lambda)
         """
         if planform == "rectangular":
             return np.ones_like(x_tilde)
@@ -90,8 +98,8 @@ def solve_wing_glauert(
 
     # 2D infinite-AR limit
     if np.isinf(AR):
-        theta_eval = np.linspace(1e-6, np.pi - 1e-6, N_eval)
-        x_tilde = np.cos(theta_eval)
+        theta_eval   = np.linspace(1e-6, np.pi - 1e-6, N_eval)
+        x_tilde      = np.cos(theta_eval)          # spanwise coordinate
         c_ratio_eval = chord_ratio(x_tilde)
 
         alpha_geom_deg_eval = alpha_geom_deg_distribution(x_tilde)
@@ -114,7 +122,7 @@ def solve_wing_glauert(
         # Gamma_tilde = Gamma / (c_bar U_inf)
         Gamma_tilde = 0.5 * cl_local * c_ratio_eval
 
-        cdi_local = np.zeros_like(theta_eval)
+        cdi_local = np.zeros_like(theta_eval)  # no induced drag in 2D
 
         # Representative integrated CL for the untwisted infinite-wing case
         # For twisted infinite-wing case this is just spanwise mean of local cl
@@ -140,10 +148,20 @@ def solve_wing_glauert(
             "A": None,
         }
 
-    # Collocation points
-    n = np.arange(1, N_terms + 1)
-    theta_col = np.arange(1, N_terms + 1) * np.pi / (N_terms + 1)
-    x_tilde_col = np.cos(theta_col)
+    # ------------------------------------------------------------------ #
+    #  STEP 1 — Collocation points (Glauert substitution)                 #
+    #                                                                      #
+    #  The Glauert substitution maps the span onto a half-circle:         #
+    #      y = (b/2) * cos(theta),  theta in [0, pi]                     #
+    #  theta=0 is the right tip, theta=pi is the left tip.               #
+    #                                                                      #
+    #  N collocation points are placed at                                 #
+    #      theta_j = j*pi/(N+1),  j = 1..N                               #
+    #  which keeps them away from the tips where sin(theta)=0 (singular). #
+    # ------------------------------------------------------------------ #
+    n         = np.arange(1, N_terms + 1)           # Fourier mode indices: 1, 2, ..., N
+    theta_col = np.arange(1, N_terms + 1) * np.pi / (N_terms + 1)  # collocation angles
+    x_tilde_col = np.cos(theta_col)                  # corresponding spanwise positions
 
     # Local chord and local geometric AoA
     c_ratio_col = chord_ratio(x_tilde_col)
@@ -158,13 +176,19 @@ def solve_wing_glauert(
     rhs = alpha_geom_col - alpha_L0
 
     for j, th in enumerate(theta_col):
+        # n * th broadcasts over all mode indices at once
         M[j, :] = np.sin(n * th) * (chord_term_col[j] + n / np.sin(th))
 
-    A = np.linalg.solve(M, rhs)
+    A = np.linalg.solve(M, rhs)  # shape: (N_terms,)
 
-    # Dense evaluation grid
-    theta_eval = np.linspace(1e-4, np.pi - 1e-4, N_eval)
-    x_tilde = np.cos(theta_eval)
+    # ------------------------------------------------------------------ #
+    #  STEP 4 — Dense evaluation grid for smooth spanwise plots           #
+    #                                                                      #
+    #  Use N_eval points in theta, avoiding exactly 0 and pi              #
+    #  (the tips) where sin(theta)=0 causes division issues.              #
+    # ------------------------------------------------------------------ #
+    theta_eval   = np.linspace(1e-4, np.pi - 1e-4, N_eval)
+    x_tilde      = np.cos(theta_eval)        # dimensionless span: -1 (left) to +1 (right)
     c_ratio_eval = chord_ratio(x_tilde)
 
     alpha_geom_deg_eval = alpha_geom_deg_distribution(x_tilde)
@@ -173,7 +197,21 @@ def solve_wing_glauert(
     sin_n_theta = np.sin(np.outer(n, theta_eval))
     series_sum = np.sum(A[:, None] * sin_n_theta, axis=0)
 
-    # Induced angle
+    # Circulation series: Gamma(theta) = 2*b*U_inf * sum_n A_n * sin(n*theta)
+    # series_sum is the dimensionless part: sum_n A_n * sin(n*theta)
+    series_sum = np.sum(A[:, None] * sin_n_theta, axis=0)  # shape: (N_eval,)
+
+    # ------------------------------------------------------------------ #
+    #  STEP 5 — Induced angle of attack                                   #
+    #                                                                      #
+    #  The downwash from all trailing vortices reduces the effective AoA. #
+    #  After applying the Glauert integral identity, the induced angle is: #
+    #                                                                      #
+    #      alpha_i(theta) = sum_n  n * A_n * sin(n*theta) / sin(theta)   #
+    #                                                                      #
+    #  Higher harmonics (n > 1) always increase induced angle, which is   #
+    #  why the elliptic distribution (A_n=0 for n>1) is optimal.          #
+    # ------------------------------------------------------------------ #
     alpha_i = np.sum((n[:, None] * A[:, None]) * sin_n_theta, axis=0) / np.sin(theta_eval)
 
     # Effective angle
@@ -188,11 +226,25 @@ def solve_wing_glauert(
     # Local induced drag coefficient approximation
     cdi_local = cl_local * alpha_i
 
-    # Wing coefficients
-    CL = np.pi * AR * A[0]
-    CDi = np.pi * AR * np.sum(n * A**2)
+    # ------------------------------------------------------------------ #
+    #  STEP 9 — Integrated wing coefficients                              #
+    #                                                                      #
+    #  Integrating the circulation over the span and using Fourier        #
+    #  orthogonality on [0, pi] eliminates all cross terms:               #
+    #                                                                      #
+    #      CL  = pi * AR * A_1                                            #
+    #      CDi = pi * AR * sum_n (n * A_n^2)                             #
+    #                                                                      #
+    #  Only A_1 contributes to lift. All higher harmonics only add drag   #
+    #  (the n*A_n^2 terms for n>1 are always positive). This is the       #
+    #  mathematical proof that the elliptic wing is aerodynamically ideal. #
+    # ------------------------------------------------------------------ #
+    CL  = np.pi * AR * A[0]               # A[0] is A_1 (0-indexed)
+    CDi = np.pi * AR * np.sum(n * A**2)   # Oswald efficiency implicitly included
 
-    # Sort left tip -> right tip
+    # Sort all arrays from left tip (x_tilde=-1) to right tip (x_tilde=+1)
+    # cos(theta) decreases from 1 to -1 as theta goes 0 -> pi, so without
+    # sorting the arrays run right-tip to left-tip.
     sort_idx = np.argsort(x_tilde)
 
     return {
@@ -207,10 +259,10 @@ def solve_wing_glauert(
         "alpha_i_deg": np.rad2deg(alpha_i[sort_idx]),
         "alpha_eff_rad": alpha_eff[sort_idx],
         "alpha_eff_deg": np.rad2deg(alpha_eff[sort_idx]),
-        "Gamma_tilde": Gamma_tilde[sort_idx],
-        "cl_local": cl_local[sort_idx],
-        "cdi_local": cdi_local[sort_idx],
-        "CL": CL,
-        "CDi": CDi,
-        "A": A,
+        "Gamma_tilde":  Gamma_tilde[sort_idx],    # Gamma / (c_bar * U_inf)
+        "cl_local":     cl_local[sort_idx],       # local section cl
+        "cdi_local":    cdi_local[sort_idx],      # local section cdi
+        "CL":           CL,                       # wing lift coefficient
+        "CDi":          CDi,                      # wing induced drag coefficient
+        "A":            A,                        # Fourier coefficients A_1..A_N
     }

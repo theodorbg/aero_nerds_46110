@@ -3,7 +3,12 @@ import matplotlib.pyplot as plt
 from panel_method.funaerotool.utils import generate_naca4_contour
 import pandas as pd
 from xfoil_reader import XFoil, load_xfoil
+import pandas as pd
+import matplotlib.pyplot as plt
 
+
+# Reyknolds number
+Re = 5e6
 # Define Aspect Ratios and angles of attack
 AR = [4, 6, 8, 10, np.inf]
 airfoil = load_xfoil("2410")
@@ -43,7 +48,7 @@ for ar in AR:
             C_D_i = C_L**2 / (np.pi * ar)
 
             # Induced angle of attack [rad]
-            alpha_i = C_L / (np.pi * ar)
+            alpha_i = C_L / (np.pi * ar) #TODO: check this formula
 
             # Effective angle of attack [rad]
             alpha_eff = a - alpha_i
