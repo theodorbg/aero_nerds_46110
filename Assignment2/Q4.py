@@ -64,6 +64,4 @@ axes[1, 1].set_xlabel(r"Span coordinate, $\tilde{x}$ [-]")
 axes[1, 1].set_ylabel(r'$c_{d,i}$ [-]')
 axes[1, 1].set_title('Local induced drag coefficient')
 axes[1, 1].grid(True, alpha=0.3)
-
-fig.suptitle(y=0.98)
 plt.show()

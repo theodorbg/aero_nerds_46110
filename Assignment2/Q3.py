@@ -14,10 +14,9 @@ alpha_L0_deg = 0
 # Tapered wing, AR = 6, AoA = 5 deg, TR = 0.2 ... 1.0
 # ============================================================
 
-AR_q3 = 6
-alpha_q3 = 5.0
-TR_list = [0.2, 0.4, 0.6, 0.8, 1.0]
-
+# ------------------------------------------------------------
+# Q3a: Plot tapered wing planform outlines
+# ------------------------------------------------------------
 def chord_ratio_tapered(x_tilde, TR):
     """
     Returns c(x_tilde) / c_bar for a linearly tapered wing.
@@ -28,22 +27,36 @@ def chord_ratio_tapered(x_tilde, TR):
     return 2.0 * (1.0 - (1.0 - TR) * np.abs(x_tilde)) / (1.0 + TR)
 
 
-# ------------------------------------------------------------
-# Q3a: Plot nondimensional chord distribution c/c_bar
-# ------------------------------------------------------------
 x_tilde_plot = np.linspace(-1, 1, 500)
 
-fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
+fig, ax = plt.subplots(figsize=(10, 5), dpi=150)
 
-for tr in TR_list:
+for tr in TR:
     c_ratio = chord_ratio_tapered(x_tilde_plot, tr)
-    ax.plot(x_tilde_plot, c_ratio, label=f"TR={tr}")
 
-ax.set_xlabel(r"Span coordinate, $\tilde{x}$ [-]")
-ax.set_ylabel(r"$c(\tilde{x})/\bar{c}$ [-]")
-ax.set_title(r"Tapered wing chord distribution, $AR=6$")
-ax.grid(True, alpha=0.3)
+    # Upper and lower planform boundaries
+    y_upper = 0.5 * c_ratio
+    y_lower = -0.5 * c_ratio
+
+    # Plot upper boundary first and store its color
+    line, = ax.plot(x_tilde_plot, y_upper, label=f"TR = {tr}")
+    color = line.get_color()
+
+    # Use same color for the rest of that outline
+    ax.plot(x_tilde_plot, y_lower, color=color)
+    ax.plot([-1, -1], [y_lower[0], y_upper[0]], color=color)
+    ax.plot([ 1,  1], [y_lower[-1], y_upper[-1]], color=color)
+
+# Axes through origin
+ax.axhline(0, linewidth=0.8, color="k", alpha=0.5)
+ax.axvline(0, linewidth=0.8, color="k", alpha=0.5)
+
+ax.set_xlabel(r"$\tilde{x}$ [-]")
+ax.set_ylabel(r"$c(\tilde{x})/(2\bar{c})$ [-]")
+ax.grid(True, alpha=0.2)
 ax.legend()
+
+plt.tight_layout()
 plt.show()
 
 
@@ -51,6 +64,10 @@ plt.show()
 # Q3b: Solve for each taper ratio
 # ------------------------------------------------------------
 solutions_q3 = {}
+AR_q3 = 6
+alpha_q3 = 5.0
+TR_list = [0.2, 0.4, 0.6, 0.8, 1.0]
+
 
 for tr in TR_list:
     sol = solve_wing_glauert(
