@@ -3,114 +3,89 @@ import matplotlib.pyplot as plt
 from panel_method.funaerotool.utils import generate_naca4_contour
 import pandas as pd
 from xfoil_reader import XFoil, load_xfoil
-import pandas as pd
-import matplotlib.pyplot as plt
+
+TITLE_FS = 30
+LABEL_FS = 20
+TICK_FS = 20
+LEGEND_FS = 15
+LEGEND_TITLE_FS = 10
 
 
+class EllipticWing:
+    def __init__(self, AR, airfoil, alpha_L0_deg=0.0):
+        self.AR = AR
+        self.airfoil = airfoil
+        self.alpha_deg = airfoil.alpha
+        self.alpha_rad = np.deg2rad(self.alpha_deg)
+        self.alpha_L0_rad = np.deg2rad(alpha_L0_deg)
+        self.label = "inf" if AR == np.inf else f"{AR}"
 
-# Reyknolds number
-Re = 5e6
-# Define Aspect Ratios and angles of attack
-AR = [4, 6, 8, 10, np.inf]
-xfoil = load_xfoil("2410")
-alpha = airfoil.alpha
-print(alpha)
+        self._compute()
 
-alpha_L0_deg = 0 # Zero lift angle of attack
-
-
-# REPLACE WITH ACTUAL DATA
-print(airfoil.CL)
-# cl_airfoil = np.array([-0.8, -0.4, 0.0, 0.4, 0.8, 1.2, 1.6])
-print(airfoil.CD)
-# cd_airfoil = np.array([0.018, 0.012, 0.009, 0.010, 0.014, 0.024, 0.040])
-
-
-# Create empty dictionaries to collect results
-CL_data = {}
-CDi_data = {}
-CD_data = {}
-
-for ar in AR:
-    CL_list = []
-    CDi_list = []
-    CD_list = []
-
-    for a_deg in airfoil.alpha:
-        # Convert to radians
-        a = np.deg2rad(a_deg)
-        alpha_L0 = np.deg2rad(alpha_L0_deg)
+    def _compute(self):
+        ar = self.AR
+        a = self.alpha_rad
+        alpha_L0 = self.alpha_L0_rad
 
         if ar != np.inf:
-            # Lift coefficient
-            C_L = (2 * np.pi) / (1 + 2 / ar) * (a - alpha_L0)
-
-            # Induced drag coefficient
-            C_D_i = C_L**2 / (np.pi * ar)
-
-            # Induced angle of attack [rad]
-            alpha_i = C_L / (np.pi * ar) #TODO: check this formula
-
-            # Effective angle of attack [rad]
-            alpha_eff = a - alpha_i
-
+            self.CL = (2 * np.pi) / (1 + 2 / ar) * (a - alpha_L0)
+            self.CDi = self.CL**2 / (np.pi * ar)
+            alpha_i = self.CL / (np.pi * ar)
+            self.alpha_eff = a - alpha_i
         else:
-            C_L = 2 * np.pi * (a - alpha_L0)
-            C_D_i = 0.0
-            alpha_i = 0.0
-            alpha_eff = a
+            self.CL = 2 * np.pi * (a - alpha_L0)
+            self.CDi = np.zeros_like(a)
+            self.alpha_eff = a.copy()
 
-        # Profile drag from airfoil polar: Cd = cd(Cl)
-        C_D = np.interp(C_L, airfoil.CL, airfoil.CD)
+        # Profile drag: interpolate from 2D polar at the EFFECTIVE alpha
+        # (the angle the local section actually "sees")
+        cl_2d = np.interp(np.rad2deg(self.alpha_eff), self.airfoil.alpha, self.airfoil.CL)
+        self.CD0 = np.interp(cl_2d, self.airfoil.CL, self.airfoil.CD)
 
-        # Store values
-        CL_list.append(C_L)
-        CDi_list.append(C_D_i)
-        CD_list.append(C_D)
+        # Total drag
+        self.CD = self.CD0 + self.CDi
 
-    col_name = "inf" if ar == np.inf else f"{ar}"
-    CL_data[col_name] = CL_list
-    CDi_data[col_name] = CDi_list
-    CD_data[col_name] = CD_list
 
-# Build dataframes
-df_CL = pd.DataFrame(CL_data, index=airfoil.alpha)
-df_CDi = pd.DataFrame(CDi_data, index=airfoil.alpha)
-df_CD = pd.DataFrame(CD_data, index=airfoil.alpha)
+# ── Setup ──────────────────────────────────────────────────────────────────────
+Re = 5e6
+AR_list = [4, 6, 8, 10, np.inf]
+alpha_L0_deg = 0.0
 
-# Name the index
-df_CL.index.name = "alpha_deg"
-df_CDi.index.name = "alpha_deg"
-df_CD.index.name = "alpha_deg"
+airfoil = load_xfoil("2410")
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 4), dpi=200, constrained_layout=True)
+# interpolate to find the zero lift angle
+alpha_L0_deg = np.interp(0.0, airfoil.CL, airfoil.alpha)
 
-# Left: CL vs geometric angle of attack
-for col in df_CL.columns:
-    axes[0].plot(df_CL.index, df_CL[col], marker='o', label=f"AR={col}")
-axes[0].set_xlabel(r'Angle of attack, $\alpha$ [deg]')
-axes[0].set_ylabel(r'$C_L$ [-]')
-axes[0].set_title(r'$C_L$ vs $\alpha$')
-axes[0].grid(True, alpha=0.3)
+print(f"Zero lift angle of attack: {alpha_L0_deg:.2f} deg")
 
-# Right: CDi vs geometric angle of attack
-for col in df_CDi.columns:
-    axes[1].plot(df_CDi.index, df_CDi[col], marker='o', label=f"AR={col}")
-axes[1].set_xlabel(r'Angle of attack, $\alpha$ [deg]')
-axes[1].set_ylabel(r'$C_{D,i}$ [-]')
-axes[1].set_title(r'$C_{D,i}$ vs $\alpha$')
-axes[1].grid(True, alpha=0.3)
+wings = [EllipticWing(ar, airfoil, alpha_L0_deg) for ar in AR_list]
 
-# Right: CD vs geometric angle of attack
-for col in df_CD.columns:
-    axes[2].plot(df_CD.index, df_CD[col], marker='o', label=f"AR={col}")
-axes[2].set_xlabel(r'Angle of attack, $\alpha$ [deg]')
-axes[2].set_ylabel(r'$C_{D}$ [-]')
-axes[2].set_title(r'$C_{D}$ vs $\alpha \; NOT \; INTERPOLATED \; YET $')
-axes[2].grid(True, alpha=0.3)
 
-# One shared legend for the whole figure
-handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc="upper center", ncol=len(labels), bbox_to_anchor=(0.5, 1.08))
 
-plt.show()
+# ── Plot ───────────────────────────────────────────────────────────────────────
+fig, axes = plt.subplots(1, 3, figsize=(15, 5), dpi=200, constrained_layout=True, sharex=True)
+
+for wing in wings:
+    label = f"AR={wing.label}"
+    axes[0].plot(wing.alpha_deg, wing.CL,  marker='o', label=label)
+    axes[1].plot(wing.alpha_deg, wing.CDi, marker='o', label=label)
+    axes[2].plot(wing.alpha_deg, wing.CD,  marker='o', label=label)
+
+axes[0].set_ylabel(r'$C_L$ [-]', fontsize=LABEL_FS)
+axes[0].set_title(r'$C_L$ vs $\alpha$', fontsize=TITLE_FS)
+
+axes[1].set_ylabel(r'$C_{D,i}$ [-]', fontsize=LABEL_FS)
+axes[1].set_title(r'$C_{D,i}$ vs $\alpha$', fontsize=TITLE_FS)
+
+axes[2].set_xlabel(r'$\alpha$ [deg]', fontsize=LABEL_FS)
+axes[2].set_ylabel(r'$C_D$ [-]', fontsize=LABEL_FS)
+axes[2].set_title(r'$C_D$ vs $\alpha$', fontsize=TITLE_FS)
+
+for ax in axes:
+    ax.grid(True, alpha=0.3)
+    ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=8))
+    ax.tick_params(axis='both', labelsize=TICK_FS)
+    ax.legend(fontsize=LEGEND_FS, title="Aspect Ratio", title_fontsize=LEGEND_TITLE_FS)
+
+plt.savefig("Q1.png", dpi=300)
+plt.close()
