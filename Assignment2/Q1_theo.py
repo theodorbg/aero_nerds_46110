@@ -13,8 +13,10 @@ Re = 5e6
 # Define Aspect Ratios and angles of attack
 AR = [4, 6, 8, 10, np.inf]
 xfoil = load_xfoil("2410")
-alpha = airfoil.alpha
+alpha = xfoil.alpha
 print(alpha)
+# create list of airfoils with different aspect ratios
+airfoils = [Airfoil(ar, alpha) for ar in AR]
 
 alpha_L0_deg = 0 # Zero lift angle of attack
 
