@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from glauert_solver import solve_wing_glauert
 
@@ -68,8 +67,9 @@ for tr in TR_list:
 # ------------------------------------------------------------
 # Plot all requested spanwise distributions in one figure
 # ------------------------------------------------------------
-fig, axes = plt.subplots(2, 2, figsize=(12, 8), dpi=200, sharex=True)
-plt.subplots_adjust(wspace=0.4, hspace=0.4)   # more horizontal space
+plt.rcParams.update({"font.size": 8})
+fig, axes = plt.subplots(2, 2, figsize=(6.49, 5), dpi=600, sharex=True)
+plt.subplots_adjust(wspace=0.4, hspace=0.35)   # more horizontal space
 
 # 1) Dimensionless circulation
 for tr in TR_list:
@@ -79,7 +79,7 @@ for tr in TR_list:
 axes[0, 0].set_ylabel(r'$\tilde{\Gamma}$ [-]')   # removes the equation text
 axes[0, 0].set_title(r"Dimensionless circulation")
 axes[0, 0].grid(True, alpha=0.3)
-axes[0, 0].legend(loc="upper left", fontsize=8, frameon=True)
+axes[0, 0].legend()
 
 # 2) Induced angle of attack
 for tr in TR_list:
@@ -112,12 +112,3 @@ axes[1, 1].grid(True, alpha=0.3)
 
 fig.suptitle(rf"Tapered wing, $AR={AR_q3}$, $\alpha={alpha_q3}^\circ$", y=0.98)
 plt.show()
-
-
-# ------------------------------------------------------------
-# Optional: print total wing coefficients for each taper ratio
-# ------------------------------------------------------------
-print("Total wing coefficients for Q3:")
-for tr in TR_list:
-    sol = solutions_q3[tr]
-    print(f"TR = {tr:>3} :  CL = {sol['CL']:.5f}   CDi = {sol['CDi']:.6f}")

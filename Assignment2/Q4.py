@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 from glauert_solver import solve_wing_glauert
 
 AR_q4 = 6
@@ -22,28 +21,29 @@ for alpha_tip in alpha_tip_list:
     )
     solutions_q4[alpha_tip] = sol
 
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8), dpi=200, sharex=True)
+plt.rcParams.update({"font.size": 8})
+fig, axes = plt.subplots(2, 2, figsize=(6.49, 5), dpi=600, sharex=True)
 plt.subplots_adjust(wspace=0.30, hspace=0.28)
 
 # 1) Dimensionless circulation
 for alpha_tip in alpha_tip_list:
     sol = solutions_q4[alpha_tip]
-    axes[0, 0].plot(sol["x_tilde"], sol["Gamma_tilde"], label=rf'$\alpha_{{g,\mathrm{{tip}}}}={alpha_tip}^\circ$')
+    axes[0, 0].plot(sol["x_tilde"], sol["Gamma_tilde"])
 
 axes[0, 0].set_ylabel(r'$\tilde{\Gamma}$ [-]')
 axes[0, 0].set_title('Dimensionless circulation')
 axes[0, 0].grid(True, alpha=0.3)
-axes[0, 0].legend(loc="upper left", fontsize=8, frameon=True)
 
 # 2) Induced angle of attack
 for alpha_tip in alpha_tip_list:
     sol = solutions_q4[alpha_tip]
-    axes[0, 1].plot(sol["x_tilde"], sol["alpha_i_deg"])
+    axes[0, 1].plot(sol["x_tilde"], sol["alpha_i_deg"], label=rf'$\alpha_{{g,\mathrm{{tip}}}}={alpha_tip}^\circ$')
 
 axes[0, 1].set_ylabel(r'$\alpha_i$ [deg]')
 axes[0, 1].set_title('Induced angle of attack')
 axes[0, 1].grid(True, alpha=0.3)
+axes[0, 1].legend()
+
 
 # 3) Local lift coefficient
 for alpha_tip in alpha_tip_list:
@@ -65,5 +65,5 @@ axes[1, 1].set_ylabel(r'$c_{d,i}$ [-]')
 axes[1, 1].set_title('Local induced drag coefficient')
 axes[1, 1].grid(True, alpha=0.3)
 
-fig.suptitle(y=0.98)
+fig.suptitle(r"Twisted wing, AR = 4, $\alpha_{g, 0} = 2^\circ$")
 plt.show()
