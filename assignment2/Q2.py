@@ -79,6 +79,7 @@ for col in df_CL_rect.columns:
 axes[0].set_xlabel(r"$\alpha$ [deg]")
 axes[0].set_ylabel(r"$C_L$ [-]")
 axes[0].grid(True, alpha=0.3)
+axes[0].legend(loc="upper left", frameon=True)
 
 # CDi
 for col in df_CDi_rect.columns:
@@ -86,8 +87,5 @@ for col in df_CDi_rect.columns:
 axes[1].set_xlabel(r"$\alpha$ [deg]")
 axes[1].set_ylabel(r"$C_{D,i}$ [-]")
 axes[1].grid(True, alpha=0.3)
-
-handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc="upper center", ncol=len(labels), bbox_to_anchor=(0.5, 1.08))
 
 plt.show()
