@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from panel_method.funaerotool.utils import generate_naca4_contour
-import pandas as pd
-from xfoil_reader import XFoil, load_xfoil
+from xfoil_reader import load_xfoil
 
 TITLE_FS = 30
 LABEL_FS = 20
@@ -59,7 +57,6 @@ alpha_L0_deg = np.interp(0.0, airfoil.CL, airfoil.alpha)
 print(f"Zero lift angle of attack: {alpha_L0_deg:.2f} deg")
 
 wings = [EllipticWing(ar, airfoil, alpha_L0_deg) for ar in AR_list]
-
 
 
 # ── Plot ───────────────────────────────────────────────────────────────────────

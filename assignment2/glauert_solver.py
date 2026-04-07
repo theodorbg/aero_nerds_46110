@@ -227,7 +227,7 @@ def solve_wing_glauert(
     cdi_local = cl_local * alpha_i
 
     # ------------------------------------------------------------------ #
-    #  STEP 9 — Integrated wing coefficients                              #
+    #  STEP 6 — Integrated wing coefficients                              #
     #                                                                      #
     #  Integrating the circulation over the span and using Fourier        #
     #  orthogonality on [0, pi] eliminates all cross terms:               #
