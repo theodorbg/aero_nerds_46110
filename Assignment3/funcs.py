@@ -1,3 +1,5 @@
+import numpy as np
+
 def rotor_power(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
     # Mars parameters
     g = 3.712 # gravitational constant [m/s^2]
