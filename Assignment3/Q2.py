@@ -1,5 +1,5 @@
 import numpy as np
-from funcs import rotor_power
+from funcs import drone_power_stacked_rotors
 
 # ── Ingenuity reference parameters ──────────────────────────────────────────
 m_ingenuity             = 1.8        # kg
@@ -8,21 +8,21 @@ R_ingenuity             = 0.6        # m
 P_ingenuity             = 88.64      # W
 
 # ── Fixed drone parameters ───────────────────────────────────────────────────
-N_blade  = 3
+N_blade  = 2
 N_rotor  = 2
-R        = 1.0   # m
-c_mean   = 0.05  # m  ← set your mean chord
-rpm      = 2500  # ← set your operating RPM
+R        = 0.6   # m
+c_mean   = 0.14  # m  ← set your mean chord
+rpm      = 2800  # ← set your operating RPM
 
 m_blade         = 70/4 * N_blade * R / R_ingenuity  # kg
-m_payload       = 2.0   # kg
-m_battery_pack  = 0.5   # kg
-m_components    = 1.0   # kg
+m_payload       = 0   # kg
+m_battery_pack  = 0.280   # kg
+m_components    = 0.9   # kg
 m_propellers    = N_blade * m_blade * N_rotor        # kg
 
 # ── Iterative solver ─────────────────────────────────────────────────────────
 P_drone   = 200.0   # initial guess [W] — pick something reasonable
-tol       = 1e-4    # convergence threshold [W]
+tol       = 1e-2    # convergence threshold [W]
 max_iter  = 100
 alpha     = 0.5     # relaxation factor (0 < alpha ≤ 1), helps stability
 
@@ -38,7 +38,7 @@ for i in range(max_iter):
     m_total       = m_fuselage + m_no_fuselage
 
     # 3. Compute required power for this mass
-    P_new = rotor_power(m_total, R, c_mean, rpm, N_blade, N_rotor)
+    P_new = drone_power_stacked_rotors(m_total, R, c_mean, rpm, N_blade, N_rotor)
 
     # 4. Check convergence
     if abs(P_new - P_drone) < tol:

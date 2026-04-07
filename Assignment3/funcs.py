@@ -1,6 +1,6 @@
 import numpy as np
 
-def rotor_power(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
+def drone_power_stacked_rotors(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
     # Mars parameters
     g = 3.712 # gravitational constant [m/s^2]
     # air density (assumed 1 meter above surface) [kg/m^3]
@@ -20,9 +20,13 @@ def rotor_power(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
     P_total_ideal = T_total**(3/2) / np.sqrt(2 * rho * A)
         
     # Power loss due to drag for the two rotors (slide 13 of lecture notes)
-    P0 = 2 * (1/8) * rho * c_mean * N_blades * C_d0 * omega**3 * r_rotor**4
+    P0 = N_rotors * (1/8) * rho * c_mean * N_blades * C_d0 * omega**3 * r_rotor**4
 
     # Total power for both rotors (slide 14 of lecture notes)
     P_rotor_total = gamma * P_total_ideal + P0
     
-    return P_rotor_total * N_rotors
+    return P_rotor_total
+
+q1 = drone_power_stacked_rotors(1.8, 0.6, 0.1417, 2800, 2, 2)
+
+print(f"Q1: {q1:.2f} W")

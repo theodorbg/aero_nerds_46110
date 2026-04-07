@@ -23,6 +23,7 @@ gamma = 1.15 # induced-loss correction factor
 
 # Mean chord approximation for profile power
 c_mean = A_blade / (Nb * R)
+print(f"Mean chord: {c_mean:.4f} m")
 
 # Total thrust in hover [m*kg/s^2]
 T_total = m * g 
