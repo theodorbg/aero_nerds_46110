@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from networkx import omega
 import numpy as np
 
 # Mars parameters
