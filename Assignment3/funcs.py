@@ -17,7 +17,7 @@ def drone_power_stacked_rotors(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors
     T_total = m_drone * g 
 
     # Total ideal power (slide 8 of lecture notes)
-    P_total_ideal = T_total**(3/2) / np.sqrt(2 * rho * A)
+    P_total_ideal = T_total**(3/2) / np.sqrt(2 * rho * A * N_rotors)
         
     # Power loss due to drag for the two rotors (slide 13 of lecture notes)
     P0 = N_rotors * (1/8) * rho * c_mean * N_blades * C_d0 * omega**3 * r_rotor**4
