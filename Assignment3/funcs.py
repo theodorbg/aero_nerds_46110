@@ -1,6 +1,6 @@
 import numpy as np
 
-def drone_power_stacked_rotors(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
+def drone_power(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors):
     # Mars parameters
     g = 3.712 # gravitational constant [m/s^2]
     # air density (assumed 1 meter above surface) [kg/m^3]
@@ -26,7 +26,3 @@ def drone_power_stacked_rotors(m_drone, r_rotor, c_mean, rpm, N_blades, N_rotors
     P_rotor_total = gamma * P_total_ideal + P0
     
     return P_rotor_total
-
-q1 = drone_power_stacked_rotors(1.8, 0.6, 0.1417, 2800, 2, 2)
-
-print(f"Q1: {q1:.2f} W")
